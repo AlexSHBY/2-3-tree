@@ -1,0 +1,212 @@
+///////////////////////////////////////////////ДОБАВЛЯЕМ\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+private Node addElementI(Node current, T element) {
+        Node newParent = null;
+        if(!current.isLeaf()) {
+            Node sonAscended = null;
+            if (current.leftElement.compareTo(element) == ROOT_IS_BIGGER) {
+                sonAscended = addElementI(current.left, element);
+                if (sonAscended != null) {
+                    if (current.is2Node()) {
+                        current.rightElement = current.leftElement;
+                        current.leftElement = sonAscended.leftElement;
+                        current.right = current.mid;
+                        current.mid = sonAscended.mid;
+                        current.left = sonAscended.left;
+                    }
+                    else {
+                        Node rightCopy = new Node(current.rightElement, null, current.mid, current.right);
+                        newParent = new Node(current.leftElement, null, sonAscended, rightCopy);
+                    }
+                }
+            } else if (current.is2Node() || (current.is3Node() && current.rightElement.compareTo(element) == ROOT_IS_BIGGER)) {
+                sonAscended = addElementI(current.mid, element);
+                if (sonAscended != null) {
+                    if (current.is2Node()) {
+                        current.rightElement    = sonAscended.leftElement;
+                        current.right           = sonAscended.mid;
+                        current.mid             = sonAscended.left;
+                    }
+                    else {
+                        Node left 	= new Node(current.leftElement, null, current.left, sonAscended.left);
+                        Node mid 	= new Node(current.rightElement, null, sonAscended.mid, current.right);
+                        newParent 	= new Node(sonAscended.leftElement, null, left, mid);
+                    }
+                }
+            } else if (current.is3Node() && current.rightElement.compareTo(element) == ROOT_IS_SMALLER) {
+                sonAscended = addElementI(current.right, element);
+                if (sonAscended != null) {
+                    Node leftCopy   = new Node(current.leftElement, null, current.left, current.mid);
+                    newParent       = new Node(current.rightElement, null, leftCopy, sonAscended);
+                }
+            }
+        }
+        else {
+            addition = true;
+            if (current.leftElement.compareTo(element) == 0 || (current.is3Node() && current.rightElement.compareTo(element) == 0)) {
+                addition = false;
+            }
+            else if (current.is2Node()) {
+                if (current.leftElement.compareTo(element) == ROOT_IS_BIGGER) {
+                    current.rightElement = current.leftElement;
+                    current.leftElement = element;
+                }
+                else if (current.leftElement.compareTo(element) == ROOT_IS_SMALLER) current.rightElement = element;
+            }
+            else newParent = split(current, element);
+        }
+        return newParent;
+    }
+///////////////////////////////////////////////ИЩЕМ\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+public T find(T element) {
+        return findI(root, element);
+    } 
+    private T findI(Node current, T element) {
+        T found = null;
+        if(current != null) {
+            if(current.leftElement != null && current.leftElement.equals(element)) found = current.leftElement;
+            else {
+                if(current.rightElement != null && current.rightElement.equals(element)) found = current.rightElement;
+                else {
+                    if(current.leftElement.compareTo(element) == ROOT_IS_BIGGER) {
+                        found = findI(current.left, element);
+                    }
+                    else if(current.right == null || current.rightElement.compareTo(element) == ROOT_IS_BIGGER) {
+                        found = findI(current.mid, element);
+                    }
+                    else if (current.rightElement.compareTo(element) == ROOT_IS_SMALLER) {
+                        found = findI(current.right, element);
+                    }
+                    else return null;
+                }
+            }
+        }
+        return found;
+    }
+///////////////////////////////////////////////УДАЛЯЕМ\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    public boolean remove(T element) { 
+        boolean deleted;
+        this.size--;
+        deleted = removeI(root, element);
+        root.rebalance();
+        if(root.getLeftElement() == null) root = null;
+        if(!deleted) this.size++;
+        return deleted;
+    }
+    private boolean removeI(Node current, T element) {
+        boolean deleted = true;
+        if(current == null) deleted = false;
+        else {
+            if(!current.getLeftElement().equals(element)) {
+                if(current.getRightElement() == null || current.getRightElement().compareTo(element) == ROOT_IS_BIGGER) {
+                    if(current.getLeftElement().compareTo(element) == ROOT_IS_BIGGER) {
+                        deleted = removeI(current.left, element);
+                    }
+                    else {
+                        deleted = removeI(current.mid, element);
+                    }
+                }
+                else {
+
+                    if(!current.getRightElement().equals(element)) {
+
+                        deleted = removeI(current.right, element);
+                    }
+                    else {
+
+                        if(current.isLeaf()) current.setRightElement(null);
+
+                        else {
+
+                            T replacement = current.getRightSon().replaceMin();
+
+                            current.setRightElement(replacement);
+                        }
+                    }
+                }
+            }
+            else {
+
+                if(current.isLeaf()) {
+
+                    if(current.getRightElement() != null) {
+
+                        current.setLeftElement(current.getRightElement());
+
+                        current.setRightElement(null);
+                    }
+                    else {
+
+                        current.setLeftElement(null);
+
+                        return true;
+                    }
+                }
+                else {
+
+                    T replacement = current.getLeftSon().replaceMax();
+
+                    current.setLeftElement(replacement);
+                }
+            }
+        }
+
+        if(current != null && !current.isBalanced()) {
+
+            current.rebalance();
+        }
+        else if(current != null && !current.isLeaf()) {
+
+            boolean balanced = false;
+
+            while(!balanced) {
+
+                if(current.getRightSon() == null) {
+
+                    if(current.getLeftSon().isLeaf() && !current.getMidSon().isLeaf()) {
+
+                        T replacement = current.getMidSon().replaceMin();
+
+                        T readdition = current.getLeftElement();
+
+                        current.setLeftElement(replacement);
+
+                        add(readdition);
+
+                    } else if(!current.getLeftSon().isLeaf() && current.getMidSon().isLeaf()) {
+
+                        if(current.getRightElement() == null) {
+
+                            T replacement = current.getLeftSon().replaceMax();
+
+                            T readdition = current.getLeftElement();
+
+                            current.setLeftElement(replacement);
+
+                            add(readdition);
+                        }
+                    }
+                }
+                if(current.getRightSon() != null) {
+
+                    if(current.getMidSon().isLeaf() && !current.getRightSon().isLeaf()) {
+
+                        current.getRightSon().rebalance();
+                    }
+                    if(current.getMidSon().isLeaf() && !current.getRightSon().isLeaf()) {
+
+                        T replacement = current.getRightSon().replaceMin();
+
+                        T readdition = current.getRightElement();
+
+                        current.setRightElement(replacement);
+
+                        add(readdition);
+                    }
+                    else balanced = true;
+                }
+                if(current.isBalanced()) balanced = true;
+            }
+        }
+
+        return deleted;
+    }
